@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Info Desk Triage — Interactive Syllabus</title>
+  <meta name="description" content="Interactive Info Desk Triage Guide for student employees — quick lookup, email templates, contact cards, and triage flow." />
+  <style>
+    :root{--accent:#0066cc;--muted:#5b6;--bg:#f5f7fb;--card:#fff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#0b2540}
+    .wrap{max-width:1100px;margin:22px auto;padding:18px}
+    header{display:flex;align-items:center;gap:14px}
+    h1{margin:0;font-size:20px}
+    .lead{color:#51637a}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:18px;margin-top:14px}
+    .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(15,22,40,0.06)}
+    input[type=search]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef6}
+    .topic{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;border:1px solid #f1f6fb;margin-bottom:8px}
+    .topic h3{margin:0;font-size:15px}
+    .meta{font-size:13px;color:#6b7b8a}
+    .btn{background:var(--accent);color:#fff;padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid #e1efff}
+    .templates{margin-top:8px}
+    pre{white-space:pre-wrap;background:#fbfdff;border:1px dashed #e5f0ff;padding:10px;border-radius:6px}
+    .contact{display:flex;gap:8px;align-items:center}
+    .contact img{width:48px;height:48px;border-radius:8px}
+    label{font-weight:600;font-size:13px}
+    .aside-actions{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .small{font-size:13px;color:#6b7b8a}
+    .hidden{display:none}
+    footer{margin-top:18px;text-align:center;color:#6b7b8a;font-size:13px}
+    @media(max-width:880px){.grid{grid-template-columns:1fr}}
+    .flow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .step{padding:8px 10px;background:#fff;border-radius:999px;border:1px solid #eef6ff;font-size:13px}
+    .copy{background:#eef8ff;border:1px solid #cfe8ff;padding:6px 8px;border-radius:6px;cursor:pointer}
+    .search-result{margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Info Desk Triage — Interactive Guide</h1>
+        <div class="lead">Fast lookup for student employees: contacts, in-person scripts, and email templates.</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <main>
+        <section class="card" aria-labelledby="searchTitle">
+          <h2 id="searchTitle">Search topics & templates</h2>
+          <p class="small">Type a keyword like "financial aid", "transcripts", or "student ID" to quickly find the right contact and template.</p>
+
+          <label for="q">Quick search</label>
+          <input type="search" id="q" placeholder="search topics, e.g. 'financial aid'" aria-label="Search topics" />
+
+          <div class="search-result" id="results"></div>
+        </section>
+
+        <section class="card" style="margin-top:12px" id="topicPanel">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h2 style="font-size:16px;margin:0">Selected Topic</h2>
+            <div class="small" id="topicMeta"></div>
+          </div>
+          <div id="topicContent" style="margin-top:10px">
+            <p class="small">Choose a topic from the left or use search to begin. Each topic includes: contact, in-person script, and email template you can copy or send.</p>
+          </div>
+        </section>
+
+        <section class="card" style="margin-top:12px">
+          <h2 style="font-size:16px;margin:0">Triage Flow</h2>
+          <div class="small">Simple decision flow to help determine next steps when a visitor approaches the desk.</div>
+          <div class="flow" id="triageFlow">
+            <div class="step">1. Ask: "How can I help you today?"</div>
+            <div class="step">2. Identify need: Admissions / Financial Aid / ID / Transcripts</div>
+            <div class="step">3. Quick Fix? (Yes → assist) (No → refer)</div>
+            <div class="step">4. Use template or escalate to department</div>
+            <div class="step">5. Document & follow up if needed</div>
+          </div>
+        </section>
+      </main>
+
+      <aside>
+        <div class="card">
+          <h3>Quick Topics</h3>
+          <div class="small">Click to open — templates will appear on the main panel.</div>
+          <div id="topicsList" style="margin-top:10px"></div>
+          <div class="aside-actions">
+            <button class="btn" id="showAll">Show All Templates</button>
+            <button class="btn ghost" id="printBtn">Print / Save PDF</button>
+            <button class="btn ghost" id="exportCSV">Export Templates (CSV)</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Contacts</h3>
+          <div id="contacts" style="margin-top:8px"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Shortcuts</h3>
+          <div class="small">Actions</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn ghost" id="copyAll">Copy Selected Template</button>
+            <button class="btn" id="openMail">Open Mail Compose</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <div class="small">Source: Info Desk Triage Guide (uploaded document).</div>
+    </footer>
+  </div>
+
+  <script>
+    // Parse a lightweight dataset derived from the uploaded Info Desk Triage Guide.
+    // For brevity we include a curated set of topics — in production this would be generated from the doc.
+    const topics = [
+      {id:'admissions',title:'Admissions Application',contact:'advisorsouth@seattlecolleges.edu | 206.934.5387',inPerson:'Refer to Welcome Center. For status/ctcLink ID, call Registration via chat.',template:`Hello,\n\nThanks for reaching out! To begin admissions, submit a free application and select an intended program. Visit the Admissions page for tips. If you want help, contact the Welcome Center:\nEmail: SouthWelcomeCenter@seattlecolleges.edu\nPhone: 206.934.7943\n\nBest,\n[Your Name]`},
+      {id:'advising',title:'Advising',contact:'advisorsouth@seattlecolleges.edu | 206.934.5387',inPerson:'Schedule an advising appointment via the Advising Home Page. For quick questions, use drop-in hours.',template:`Hello,\n\nThank you for reaching out! Please schedule an advising appointment on our Advising Home Page by pressing "Schedule advising appointment". Advisors can review your program and available courses.\n\nWebsite: https://southseattle.edu/advising\nEmail: advisorsouth@seattlecolleges.edu\nPhone: 206.934.5387\n\nBest,\n[Your Name]`},
+      {id:'financial',title:'Financial Aid & Funding',contact:'financialsouth@seattlecolleges.edu | 206.934.5317',inPerson:'Refer to Financial Aid; complete FAFSA or WASFA; refer to Benefits Hub for additional assistance.',template:`Hi,\n\nThanks for your question about funding. Start by completing the FAFSA (or WASFA if ineligible for federal aid). For workforce funding eligibility and other options, visit the Paying for College page or contact Benefits Hub.\n\nFinancial Aid: financialsouth@seattlecolleges.edu\nBenefits Hub: BenefitsHubSSC@seattlecolleges.edu\n\nBest,\n[Your Name]`},
+      {id:'transcripts',title:'Transcripts & Evaluations',contact:'ssccregistration@seattlecolleges.edu',inPerson:'Order official transcripts via National Student Clearinghouse or direct senders; see Transcripts page.',template:`Hello,\n\nTo request official transcripts, order them through the National Student Clearinghouse or have previous institutions send directly to:\nSouth Seattle College\nAttn: Credential Evaluations RSB 045\n6000 16th Avenue SW\nSeattle, WA 98106\nOr email SEvaluations@seattlecolleges.edu\n\nProcessing may take 3-5 weeks during peak times.\n\nBest,\n[Your Name]`},
+      {id:'idcard',title:'Student ID Cards',contact:'sscccashier@seattlecolleges.edu | 206.934.5388',inPerson:'Provide photo ID, be registered with tuition paid, pay $7.50 at Cashiers.',template:`Hello,\n\nStudent ID cards are processed at RSB Information Desk during open hours. Please be a currently registered student, have tuition & fees paid, provide a valid government photo ID, and pay $7.50 at the Cashiers office.\n\nBest,\n[Your Name]`}
+    ];
+
+    const contactsData = [
+      {name:'Welcome Center',email:'SouthWelcomeCenter@seattlecolleges.edu',phone:'206.934.7943',hours:'Mon-Thurs 8-5'},
+      {name:'Advising',email:'advisorsouth@seattlecolleges.edu',phone:'206.934.5387'},
+      {name:'Financial Aid',email:'financialsouth@seattlecolleges.edu',phone:'206.934.5317'},
+      {name:'Registration',email:'ssccregistration@seattlecolleges.edu',phone:'206.934.7938'}
+    ];
+
+    const topicsList = document.getElementById('topicsList');
+    const results = document.getElementById('results');
+    const topicContent = document.getElementById('topicContent');
+    const topicMeta = document.getElementById('topicMeta');
+    const contacts = document.getElementById('contacts');
+
+    function renderTopics(filter=''){
+      topicsList.innerHTML='';
+      const f = filter.trim().toLowerCase();
+      const list = topics.filter(t=>!f || (t.title.toLowerCase().includes(f) || t.template.toLowerCase().includes(f) || t.contact.toLowerCase().includes(f)));
+      list.forEach(t=>{
+        const div=document.createElement('div'); div.className='topic';
+        div.innerHTML=`<div><h3>${t.title}</h3><div class='meta'>${t.contact}</div></div><div><button class='btn ghost' data-id='${t.id}'>Open</button></div>`;
+        topicsList.appendChild(div);
+      });
+      if(list.length===0) topicsList.innerHTML='<div class="small">No topics found. Try another keyword.</div>';
+      topicsList.querySelectorAll('button').forEach(b=>b.addEventListener('click',e=>openTopic(e.target.dataset.id)));
+    }
+
+    function openTopic(id){
+      const t=topics.find(x=>x.id===id); if(!t) return;
+      topicMeta.textContent=t.contact;
+      topicContent.innerHTML=`<h3 style="margin:0">${t.title}</h3><p class='small' style='margin-top:6px'><strong>In-person:</strong> ${t.inPerson}</p><div style='margin-top:8px'><label>Email Template</label><pre id='tmpl'>${t.template}</pre><div style='display:flex;gap:8px;margin-top:8px'><button class='btn' id='copyBtn'>Copy</button><button class='btn ghost' id='sendBtn'>Send Mail</button></div></div>`;
+      document.getElementById('copyBtn').addEventListener('click',()=>{copyToClipboard(t.template);alert('Template copied to clipboard');});
+      document.getElementById('sendBtn').addEventListener('click',()=>{const body=encodeURIComponent(t.template);location.href='mailto:'+encodeURIComponent(t.contact.split('|')[0].trim())+'?subject='+encodeURIComponent(t.title+' inquiry')+'&body='+body;});
+    }
+
+    function copyToClipboard(text){navigator.clipboard.writeText(text).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();});}
+
+    // Search
+    document.getElementById('q').addEventListener('input',e=>{const v=e.target.value; renderTopics(v); results.innerHTML=''; if(v.trim()) results.innerHTML=`<div class='small'>Showing topics matching "${v}"</div>`; });
+
+    // Show all templates
+    document.getElementById('showAll').addEventListener('click',()=>{
+      topicMeta.textContent='All templates';
+      topicContent.innerHTML='';
+      topics.forEach(t=>{ const el=document.createElement('div'); el.innerHTML=`<h4>${t.title}</h4><pre>${t.template}</pre><div style='margin-bottom:10px'><button class='btn ghost' data-id='${t.id}'>Open</button> <button class='copy' data-tmpl='${encodeURIComponent(t.template)}'>Copy</button></div>`; topicContent.appendChild(el); });
+      topicContent.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',e=>{copyToClipboard(decodeURIComponent(e.target.dataset.tmpl));alert('Copied');}));
+    });
+
+    // Contacts render
+    function renderContacts(){ contacts.innerHTML=''; contactsData.forEach(c=>{ const d=document.createElement('div'); d.style.marginBottom='8px'; d.innerHTML=`<div><strong>${c.name}</strong><div class='small'>${c.email}${c.phone? ' • '+c.phone: ''}</div></div>`; contacts.appendChild(d); }); }
+
+    // Print & export
+    document.getElementById('printBtn').addEventListener('click',()=>window.print());
+    document.getElementById('exportCSV').addEventListener('click',()=>{
+      const rows=['title,contact,template']; topics.forEach(t=>rows.push(`"${t.title.replace(/"/g,'""')}","${t.contact}","${t.template.replace(/"/g,'""')}"`));
+      const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='info-desk-templates.csv'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // Copy selected template -> picks first visible template in panel
+    document.getElementById('copyAll').addEventListener('click',()=>{
+      const pre=document.querySelector('#topicContent pre'); if(!pre) return alert('No template selected'); copyToClipboard(pre.textContent); alert('Template copied');
+    });
+
+    document.getElementById('openMail').addEventListener('click',()=>{
+      const pre=document.querySelector('#topicContent pre'); if(!pre) return alert('No template selected'); const to=document.getElementById('topicMeta').textContent.split('|')[0].trim(); location.href='mailto:'+encodeURIComponent(to)+'?subject=Info+Desk+Assistance&body='+encodeURIComponent(pre.textContent);
+    });
+
+    // Init
+    renderTopics(); renderContacts();
+
+    // Keyboard accessibility: Enter on topic open
+    document.addEventListener('keydown',e=>{ if(e.key==='/' && document.activeElement.tagName!=='INPUT'){ e.preventDefault(); document.getElementById('q').focus(); } });
+  </script>
+</body>
+</html>
